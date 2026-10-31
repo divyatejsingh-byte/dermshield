@@ -1,3 +1,4 @@
+import Link from "next/link";
 export default function Close() {
   return (
     <section className="relative flex flex-col overflow-hidden px-5 pt-14 md:min-h-screen md:px-16 md:pt-28">
@@ -11,22 +12,16 @@ export default function Close() {
           </p>
         </div>
         <div className="flex flex-col gap-3 md:items-end md:justify-start md:pt-14">
-          <a
-            href="#console"
+          <Link
+            href="/scan"
             className="w-full rounded-full bg-emerald-500 px-6 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 md:w-auto"
           >
             Scan Your Skin Now — It&apos;s Free
-          </a>
+          </Link>
         </div>
       </div>
 
-      <div className="mt-16 flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-slate-800 py-4 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">
-        <span className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> All systems running
-        </span>
-        <span>Powered by YouCam Skin AI</span>
-        <span>© {new Date().getFullYear()} DermShield · Not medical advice</span>
-      </div>
+      <div className="mt-12" />
 
       {/* Base wordmark: bottom page edge crops it */}
       <div

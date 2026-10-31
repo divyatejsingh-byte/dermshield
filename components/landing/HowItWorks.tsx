@@ -16,13 +16,10 @@ const STEPS = [
   },
 ];
 
-export default function HowItWorks() {
-  return (
-    <section id="how" className="scroll-mt-20 px-5 py-12 md:px-16 md:py-24">
-      <p className="mb-10 font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-400">
-        HOW IT WORKS
-      </p>
-      <ol className="grid gap-5 md:grid-cols-3">
+/** `bare` returns just the three steps, for pages that supply their own heading and spacing. */
+export default function HowItWorks({ bare = false }: { bare?: boolean }) {
+  const steps = (
+    <ol className="grid gap-5 md:grid-cols-3">
         {STEPS.map((s) => (
           <li key={s.n} className="rounded-2xl border border-slate-800 bg-slate-900/50 p-7">
             <span className="font-mono text-xs text-emerald-400">STEP {s.n}</span>
@@ -30,7 +27,15 @@ export default function HowItWorks() {
             <p className="mt-3 text-sm leading-relaxed text-slate-400">{s.body}</p>
           </li>
         ))}
-      </ol>
+    </ol>
+  );
+  if (bare) return steps;
+  return (
+    <section id="how" className="scroll-mt-20 px-5 py-12 md:px-16 md:py-24">
+      <p className="mb-10 font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-400">
+        HOW IT WORKS
+      </p>
+      {steps}
     </section>
   );
 }

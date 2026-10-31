@@ -1,6 +1,6 @@
-import DermShieldApp from "@/components/DermShieldApp";
+import HomeView from "@/components/pages/HomeView";
 import PortalHero from "@/components/PortalHero";
 
 export default function Home() {
-  return <DermShieldApp hero={<PortalHero />} />;
+  return <HomeView hero={<PortalHero />} />;
 }

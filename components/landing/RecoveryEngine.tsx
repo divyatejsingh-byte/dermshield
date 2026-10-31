@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { baseScore, projectMetrics } from "@/lib/shieldEngine";
 import { cn } from "@/lib/utils";
@@ -43,18 +44,18 @@ export default function RecoveryEngine({ baseline, day, onDay }: Props) {
           returns to a healthy range.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <a
-            href="#roster"
+          <Link
+            href="/audit"
             className="rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
           >
             Audit My Products
-          </a>
-          <a
-            href="#timeline"
+          </Link>
+          <Link
+            href="#simulator"
             className="rounded-full border border-slate-600 px-5 py-2.5 text-sm font-semibold transition hover:border-emerald-500 hover:text-emerald-300"
           >
-            Try the Healing Simulator
-          </a>
+            Open the Healing Simulator
+          </Link>
         </div>
       </div>
 
@@ -64,12 +65,12 @@ export default function RecoveryEngine({ baseline, day, onDay }: Props) {
           <p className="mt-3 max-w-xs text-sm text-slate-400">
             Scan your skin and we&apos;ll show how it can recover over the next 7 days.
           </p>
-          <a
-            href="#console"
+          <Link
+            href="/scan"
             className="mt-6 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
           >
             Check My Skin
-          </a>
+          </Link>
         </div>
       ) : (
       <div className="mx-auto w-full max-w-[440px]">

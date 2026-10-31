@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import AppProvider from "@/components/AppProvider";
+import Footer from "@/components/Footer";
+import Nav from "@/components/landing/Nav";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap", axes: ["SOFT"] });
 const sans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -21,7 +24,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "if('scrollRestoration' in history)history.scrollRestoration='manual';try{var t=localStorage.getItem('dermshield_theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}",
           }}
         />
-        {children}
+        <AppProvider>
+          <div className="min-h-screen overflow-x-clip">
+            <Nav />
+            {children}
+            <Footer />
+          </div>
+        </AppProvider>
       </body>
     </html>
   );

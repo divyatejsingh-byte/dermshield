@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { HARSH_CATEGORIES, flushRisk, ledgerRows, type LedgerStatus } from "@/lib/shieldEngine";
 import { QUICK_PRODUCTS } from "@/lib/quickProducts";
@@ -58,12 +59,12 @@ export default function RosterLedger({ shelf, shield, metrics, onAdd }: Props) {
                 </p>
               </div>
             </div>
-            <a
-              href="#console"
+            <Link
+              href={metrics ? "#manage-products" : "/scan"}
               className="shrink-0 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
             >
               {metrics ? "Add Products" : "Check My Skin"}
-            </a>
+            </Link>
           </div>
         )}
         {(rows.length === 0 || !metrics) && (

@@ -27,13 +27,7 @@ export default function AuthButton({ guest, onGuest, compact = false }: Props) {
   const { data: session, isPending } = authClient.useSession();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [toast, setToast] = useState(false);
 
-  const startDemo = () => {
-    onGuest(true);
-    setToast(true);
-    window.setTimeout(() => setToast(false), 5000);
-  };
   // Demo login never waits on the session check.
   const waiting = isPending && !guest;
 
@@ -104,11 +98,6 @@ export default function AuthButton({ guest, onGuest, compact = false }: Props) {
   if (guest) {
     return (
       <div className="relative flex items-center gap-2">
-        {toast && (
-          <div role="status" className="absolute right-0 top-full mt-3 w-64 rounded-xl border border-amber-400/40 bg-slate-900 p-3 text-xs text-slate-200 shadow-xl">
-            Demo guest started. Upload a photo or take a selfie below to see your results.
-          </div>
-        )}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-300">
           <UserRound className="h-3.5 w-3.5" /> Demo guest
         </span>
@@ -124,12 +113,6 @@ export default function AuthButton({ guest, onGuest, compact = false }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        onClick={startDemo}
-        className="rounded-full border border-amber-400/50 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-300 transition hover:bg-amber-400/10"
-      >
-        Demo Login
-      </button>
       <button
         onClick={signIn}
         disabled={busy || waiting}

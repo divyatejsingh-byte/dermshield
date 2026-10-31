@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, Camera, CalendarClock, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StoredScan } from "@/types/dermshield";
@@ -117,12 +118,12 @@ export default function Dashboard({ name, guest, scans, loaded }: Props) {
             {latest ? `Day ${trackingDay} of tracking your skin.` : "Let's take your first scan and start tracking."}
           </p>
         </div>
-        <a
-          href="#console"
+        <Link
+          href="/scan"
           className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
         >
           <Camera className="h-4 w-4" /> {latest ? "New scan" : "Start first scan"}
-        </a>
+        </Link>
       </div>
 
       {loaded && (
@@ -229,9 +230,9 @@ export default function Dashboard({ name, guest, scans, loaded }: Props) {
                 ? "Your last scan was yesterday. A new scan today keeps your week on track."
                 : `Your last scan was ${daysSince} days ago. Time for a new one.`}
           </div>
-          <a href="#console" className="text-sm font-semibold text-emerald-300 hover:text-emerald-200">
+          <Link href="/scan" className="text-sm font-semibold text-emerald-300 hover:text-emerald-200">
             Scan now
-          </a>
+          </Link>
         </div>
       )}
     </section>

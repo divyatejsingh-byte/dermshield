@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 
@@ -219,25 +220,18 @@ export default function PortalHero() {
               pause, and helps your skin heal its natural shield.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3 md:justify-start">
-              <a
-                href="#console"
+              <Link
+                href="/scan"
                 className="pointer-events-auto rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
               >
                 Check My Skin
-              </a>
-              <a
-                href="#roster"
+              </Link>
+              <Link
+                href="/audit"
                 className="pointer-events-auto rounded-full border border-slate-300/50 bg-slate-950/40 px-6 py-3 text-sm font-semibold backdrop-blur transition hover:border-emerald-400 hover:text-emerald-300"
               >
                 Audit My Products
-              </a>
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new Event("dermshield:demo"))}
-                className="pointer-events-auto rounded-full border border-amber-400/60 bg-slate-950/40 px-6 py-3 text-sm font-semibold text-amber-300 backdrop-blur transition hover:bg-amber-400/10"
-              >
-                Try Demo Profile (Over-exfoliated / Retinol Burn)
-              </button>
+              </Link>
             </div>
           </div>
         </div>
