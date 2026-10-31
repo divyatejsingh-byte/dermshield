@@ -28,7 +28,7 @@ export default function ScoreDial({ score, stage, size = 64, className }: Props)
       aria-label={`Skin Shield Score ${Math.round(score)} out of 100`}
     >
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#1e293b" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--c-slate-800))" strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}

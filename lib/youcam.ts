@@ -39,12 +39,26 @@ const clamp = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
  */
 export function mapYouCamPayload(raw: {
   redness?: { score: number };
+  acne?: { score: number };
   texture?: { score: number };
+  age_spot?: { score: number };
   moisture?: { score: number };
 }): SkinMetrics {
+  // YouCam's 0-100 scores run high even for visibly blemished skin (a face with clear acne
+  // marks scored ~81 for acne and ~85 for redness; a clear face ~98 and ~99). Stretch the
+  // gap from "perfect" so those differences show up on the app's own scale.
+  const problem = (score: number | undefined, stretch: number) =>
+    Math.max(0, 100 - (score ?? 100)) * stretch;
+
+  const red = problem(raw.redness?.score, 2.2);
+  const acne = problem(raw.acne?.score, 2.2);
+  const texture = problem(raw.texture?.score, 1.7);
+  const spots = problem(raw.age_spot?.score, 1.7);
+
   return {
-    redness: clamp(100 - (raw.redness?.score ?? 50)),
-    roughness: clamp(100 - (raw.texture?.score ?? 50)),
+    // Breakouts count as irritation: weight whichever is worse a little more.
+    redness: clamp(0.6 * Math.max(red, acne) + 0.4 * Math.min(red, acne)),
+    roughness: clamp(0.65 * texture + 0.35 * spots),
     hydration: clamp(raw.moisture?.score ?? 50),
   };
 }
@@ -108,7 +122,7 @@ async function callYouCamLive(input: AnalyzeInput, apiKey: string): Promise<Skin
     method: "POST",
     body: JSON.stringify({
       src_file_id: file.file_id,
-      dst_actions: ["redness", "texture", "moisture"],
+      dst_actions: ["redness", "acne", "texture", "age_spot", "moisture"],
       format: "json",
     }),
   });
@@ -130,8 +144,10 @@ async function callYouCamLive(input: AnalyzeInput, apiKey: string): Promise<Skin
         return o ? (o.ui_score ?? o.raw_score) : undefined;
       };
       return mapYouCamPayload({
-        redness: { score: score("redness") ?? 50 },
-        texture: { score: score("texture") ?? 50 },
+        redness: { score: score("redness") ?? 100 },
+        acne: { score: score("acne") ?? 100 },
+        texture: { score: score("texture") ?? 100 },
+        age_spot: { score: score("age_spot") ?? 100 },
         moisture: { score: score("moisture") ?? 50 },
       });
     }

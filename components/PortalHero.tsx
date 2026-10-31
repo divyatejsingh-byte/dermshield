@@ -39,7 +39,86 @@ export default function PortalHero() {
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+
+    // Gentle-scroll shutter: any light wheel / swipe / arrow press inside the hero glides the
+    // shutter fully open (or fully closed again) in ~700ms, instead of making people scrub it.
+    // Only real user gestures trigger it, so in-page links and the logo keep working normally.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let animating = false;
+    const openY = () => Math.max(0, el.offsetHeight - window.innerHeight);
+    const glideTo = (target: number) => {
+      const from = window.scrollY;
+      if (animating || Math.abs(target - from) < 2) return;
+      if (reduce) {
+        window.scrollTo({ top: target, behavior: "instant" as ScrollBehavior });
+        return;
+      }
+      animating = true;
+      const html = document.documentElement;
+      html.style.scrollBehavior = "auto";
+      const t0 = performance.now();
+      const DURATION = 700;
+      const step = (now: number) => {
+        const t = Math.min(1, (now - t0) / DURATION);
+        const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+        window.scrollTo(0, from + (target - from) * eased);
+        if (t < 1) requestAnimationFrame(step);
+        else {
+          animating = false;
+          html.style.scrollBehavior = "";
+        }
+      };
+      requestAnimationFrame(step);
+    };
+    const inHero = () => window.scrollY < openY() - 2;
+    const decide = (down: boolean) => {
+      if (down && inHero()) {
+        glideTo(openY());
+        return true;
+      }
+      if (!down && window.scrollY > 0 && window.scrollY <= openY() + 2) {
+        glideTo(0);
+        return true;
+      }
+      return false;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (animating) return e.preventDefault();
+      if (Math.abs(e.deltaY) < 1) return;
+      if (decide(e.deltaY > 0)) e.preventDefault();
+    };
+    let touchY: number | null = null;
+    const onTouchStart = (e: TouchEvent) => {
+      touchY = e.touches[0]?.clientY ?? null;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (animating) return e.preventDefault();
+      if (touchY === null) return;
+      const dy = touchY - (e.touches[0]?.clientY ?? touchY);
+      if (Math.abs(dy) < 12) return;
+      touchY = null; // one decision per swipe
+      if (decide(dy > 0)) e.preventDefault();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && /^(input|textarea|select)$/i.test(t.tagName)) return;
+      if (["ArrowDown", "PageDown", " "].includes(e.key) && !e.shiftKey) {
+        if (decide(true)) e.preventDefault();
+      } else if (["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey)) {
+        if (decide(false)) e.preventDefault();
+      }
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("keydown", onKey);
+
     return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("keydown", onKey);
+      document.documentElement.style.scrollBehavior = "";
       window.clearTimeout(t);
       window.removeEventListener("load", toTop);
       window.removeEventListener("scroll", onScroll);
@@ -51,16 +130,16 @@ export default function PortalHero() {
   // Panels finish opening at 80% of the runway so the face is fully clear before the section ends.
   const open = "clamp(0, calc(var(--hp) / 0.8), 1)";
   const wordmark =
-    "font-display font-bold leading-none tracking-[-0.03em] text-[clamp(44px,11.5vw,190px)] pr-[0.05em] will-change-transform";
+    "font-display font-bold leading-none tracking-[-0.03em] text-[8.4vw] sm:text-[clamp(44px,11.5vw,190px)] pr-[0.05em] will-change-transform";
 
   return (
     <section
       id="top"
       ref={ref}
-      className="relative h-[250vh] w-full"
+      className="force-dark relative h-[250vh] w-full"
       style={{ ["--hp" as string]: 0 }}
     >
-      <div className="sticky top-0 isolate h-screen w-full overflow-hidden bg-slate-950">
+      <div className="sticky top-0 isolate h-[100dvh] w-full overflow-hidden bg-slate-950">
         {/* 1. Backdrop */}
         <div
           className="absolute inset-0 will-change-transform"
@@ -152,6 +231,13 @@ export default function PortalHero() {
               >
                 Audit My Products
               </a>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event("dermshield:demo"))}
+                className="pointer-events-auto rounded-full border border-amber-400/60 bg-slate-950/40 px-6 py-3 text-sm font-semibold text-amber-300 backdrop-blur transition hover:bg-amber-400/10"
+              >
+                Try Demo Profile (Over-exfoliated / Retinol Burn)
+              </button>
             </div>
           </div>
         </div>

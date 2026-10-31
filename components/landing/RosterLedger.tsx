@@ -1,10 +1,11 @@
 "use client";
 
 import { ShieldCheck } from "lucide-react";
-import { flushRisk, ledgerRows, type LedgerStatus } from "@/lib/shieldEngine";
+import { HARSH_CATEGORIES, flushRisk, ledgerRows, type LedgerStatus } from "@/lib/shieldEngine";
+import { QUICK_PRODUCTS } from "@/lib/quickProducts";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { cn } from "@/lib/utils";
-import type { ShieldResult, ShelfProduct, SkinMetrics } from "@/types/dermshield";
+import type { ActiveCategory, ShieldResult, ShelfProduct, SkinMetrics } from "@/types/dermshield";
 
 const STATUS_STYLE: Record<LedgerStatus, { label: string; cls: string }> = {
   within: { label: "Healthy", cls: "text-emerald-400" },
@@ -21,18 +22,19 @@ interface Props {
   shelf: ShelfProduct[];
   shield: ShieldResult | null;
   metrics: SkinMetrics | null;
+  onAdd: (name: string, active: string, category?: ActiveCategory) => void;
 }
 
-export default function RosterLedger({ shelf, shield, metrics }: Props) {
+export default function RosterLedger({ shelf, shield, metrics, onAdd }: Props) {
   const verdicts = new Map((shield?.evaluation.verdicts ?? []).map((v) => [v.product.id, v]));
-  const rows = metrics ? shelf.filter((p) => p.enabled) : [];
+  const rows = shelf.filter((p) => p.enabled);
   // Before a scan the rows still list what we check and the healthy ranges, with no readings.
   const ledger = ledgerRows(metrics ?? { redness: 0, roughness: 0, hydration: 0 });
 
   return (
-    <section className="px-6 py-24 md:px-16">
+    <section className="px-5 py-12 md:px-16 md:py-24">
       {/* Roster */}
-      <div id="roster" className="scroll-mt-24">
+      <div id="roster" className="scroll-mt-20">
         <p className="mb-8 font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-400">
           AUDIT YOUR PRODUCTS
         </p>
@@ -64,11 +66,42 @@ export default function RosterLedger({ shelf, shield, metrics }: Props) {
             </a>
           </div>
         )}
+        {(rows.length === 0 || !metrics) && (
+          <div className="mb-6 mt-5">
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Quick add: tap the products you use
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_PRODUCTS.map((q) => {
+                const added = shelf.some((p) => p.name === q.name);
+                return (
+                  <button
+                    key={q.label}
+                    onClick={() => !added && onAdd(q.name, q.active, q.category)}
+                    disabled={added}
+                    className={cn(
+                      "rounded-full border px-3.5 py-2 text-sm transition",
+                      added
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                        : "border-slate-700 bg-slate-900/60 text-slate-200 hover:border-emerald-500 hover:text-emerald-300",
+                    )}
+                  >
+                    {added ? "✓ " : "+ "}
+                    {q.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {rows.length > 0 && (
         <ul className="border-t border-slate-800">
           {rows.map((p) => {
-            const quarantined = verdicts.get(p.id)?.status === "quarantined";
-            const risk = flushRisk(p, metrics!);
+            // Before a scan the tag is provisional: strong actives are assumed paused until your skin says otherwise.
+            const quarantined = metrics
+              ? verdicts.get(p.id)?.status === "quarantined"
+              : HARSH_CATEGORIES.has(p.category);
+            const risk = metrics ? flushRisk(p, metrics) : null;
             return (
               <li
                 key={p.id}
@@ -76,11 +109,13 @@ export default function RosterLedger({ shelf, shield, metrics }: Props) {
               >
                 <span
                   className={cn(
-                    "w-fit font-mono text-[10.5px] font-semibold uppercase tracking-[0.16em]",
-                    quarantined ? "text-rose-400/90" : "text-emerald-400",
+                    "w-fit rounded-full px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em] ring-1",
+                    quarantined
+                      ? "bg-amber-500/15 text-amber-400 ring-amber-500/50"
+                      : "bg-emerald-500/15 text-emerald-400 ring-emerald-500/40",
                   )}
                 >
-                  {quarantined ? "PAUSED (5 Days)" : "SAFE TO USE"}
+                  {quarantined ? "PAUSED (5 Days)" : "SAFE TO KEEP"}
                 </span>
                 <div>
                   <span
@@ -91,16 +126,19 @@ export default function RosterLedger({ shelf, shield, metrics }: Props) {
                   >
                     {p.name}
                   </span>
-                  <p className="mt-1 text-sm text-slate-500">{verdicts.get(p.id)?.reason}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {metrics ? verdicts.get(p.id)?.reason : "Provisional. Scan your skin to confirm."}
+                  </p>
                 </div>
                 <span
                   className={cn(
-                    "font-mono text-xs uppercase tracking-wider md:text-right",
-                    risk > 0 ? "text-rose-300" : "text-emerald-300",
+                    "text-xs font-medium uppercase tracking-wider md:text-right",
+                    risk === null ? "text-slate-500" : risk > 0 ? "text-rose-300" : "text-emerald-300",
                   )}
                 >
-                  {risk > 0 ? "+" : risk < 0 ? "−" : ""}
-                  {Math.abs(risk)}% irritation risk
+                  {risk === null
+                    ? "Scan to see irritation risk"
+                    : `${risk > 0 ? "+" : risk < 0 ? "−" : ""}${Math.abs(risk)}% irritation risk`}
                 </span>
               </li>
             );

@@ -61,7 +61,7 @@ export interface CommerceState {
   tier: "none" | "soothing" | "full";
 }
 
-export type Merchant = "Amazon.in" | "Flipkart" | "Nykaa";
+export type Merchant = "Amazon.in" | "Flipkart" | "Nykaa" | "Tata 1mg" | "Apollo Pharmacy" | "Netmeds";
 
 export interface MarketListing {
   merchant: Merchant;
@@ -74,6 +74,7 @@ export interface MarketListing {
 
 export interface MarketProduct {
   id: string;
+  channel: "pharmacy" | "commercial";
   title: string;
   brand: string;
   size: string;
@@ -81,6 +82,10 @@ export interface MarketProduct {
   /** 1 = soothing (available while healing), 2 = restorative (after full recovery) */
   phase: 1 | 2;
   tags: string[];
+  /** Short ingredient line, taken from the retailer listings */
+  activeTag?: string;
+  /** Pharmacy only: roughly how much cheaper than popular brands, for the same amount */
+  savings?: { amount: number; versus: string };
   /** Data-URI or remote image URL */
   thumbnail: string;
   listings: MarketListing[];
@@ -88,7 +93,8 @@ export interface MarketProduct {
 
 export interface MarketplaceResponse {
   source: "serpapi";
-  tier: "soothing" | "full";
+  channel: "pharmacy" | "commercial";
+  tier: "none" | "soothing" | "full";
   products: MarketProduct[];
 }
 

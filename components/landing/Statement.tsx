@@ -4,7 +4,7 @@ export default function Statement() {
   return (
     <section
       id="problem"
-      className="relative flex min-h-screen items-center overflow-hidden px-6 py-24 md:px-16"
+      className="relative flex items-center overflow-hidden px-5 py-12 md:min-h-screen md:px-16 md:py-24"
     >
       <div className="relative z-10 grid w-full grid-cols-[1.5fr_1fr] items-center gap-5 md:gap-14 md:grid-cols-[1.6fr_1fr]">
         <div className="max-w-5xl">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Flame, Loader2, Sparkles, Upload, Droplets, Waves, Eye, EyeOff, Camera, X } from "lucide-react";
+import { Flame, Loader2, Lock as LockIcon, Sparkles, Upload, Droplets, Waves, Eye, EyeOff, Camera, X } from "lucide-react";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { cn } from "@/lib/utils";
 import type { SkinMetrics } from "@/types/dermshield";
@@ -96,6 +96,21 @@ function HeatOverlay({ metrics }: { metrics: SkinMetrics }) {
 }
 
 
+/** Trust note shown wherever a photo is taken or chosen. Accurate: the photo goes to YouCam for analysis. */
+function PrivacyNote({ className = "" }: { className?: string }) {
+  return (
+    <p
+      className={`flex items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs leading-relaxed text-emerald-300 ${className}`}
+    >
+      <LockIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>
+        Real-time scan. Your photo is analysed securely and is never permanently stored or shared by DermShield.
+        Only your scores are saved.
+      </span>
+    </p>
+  );
+}
+
 /** Live camera capture (desktop webcams + phones). Hands a JPEG File back via onCapture. */
 function CameraModal({ onCapture, onClose }: { onCapture: (f: File) => void; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -187,6 +202,7 @@ function CameraModal({ onCapture, onClose }: { onCapture: (f: File) => void; onC
             <p className="mt-2 text-center text-xs text-slate-400">
               Face the light, keep your whole face in the oval, and remove glasses.
             </p>
+            <PrivacyNote className="mt-3" />
             <button
               onClick={snap}
               disabled={!ready}
@@ -285,6 +301,7 @@ export default function BiometricsPanel({
           </button>
         </div>
         {error && <p className="mt-2 text-xs text-rose-300">{error}</p>}
+        <PrivacyNote className="mt-3" />
       </div>
       {cameraOpen && (
         <CameraModal
@@ -300,7 +317,7 @@ export default function BiometricsPanel({
       <div className="grid gap-3">
         <MetricCard
           label="Redness & Irritation"
-          hint="Lower is calmer."
+          hint="Redness and breakouts. Lower is calmer."
           value={metrics.redness}
           higherIsWorse
           icon={Flame}

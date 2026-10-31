@@ -2,16 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
+/* Dark is the default. Light overrides the same variables, so every slate-* class re-colours. */
+:root,
+.force-dark {
+  --c-slate-50: 248 250 252;
+  --c-slate-100: 241 245 249;
+  --c-slate-200: 226 232 240;
+  --c-slate-300: 203 213 225;
+  --c-slate-400: 148 163 184;
+  --c-slate-500: 100 116 139;
+  --c-slate-600: 71 85 105;
+  --c-slate-700: 51 65 85;
+  --c-slate-800: 30 41 59;
+  --c-slate-900: 15 23 42;
+  --c-slate-950: 2 6 23;
+  --c-emerald-50: 236 253 245;
+  --c-emerald-100: 209 250 229;
+  --c-emerald-200: 167 243 208;
+  --c-emerald-300: 110 231 183;
+  --c-emerald-400: 52 211 153;
+  --c-rose-100: 255 228 230;
+  --c-rose-200: 254 205 211;
+  --c-rose-300: 253 164 175;
+  --c-rose-400: 251 113 133;
+  --c-sky-200: 186 230 253;
+  --c-pink-200: 251 207 232;
+  --c-amber-100: 254 243 199;
+  --c-amber-200: 253 230 138;
+  --c-amber-300: 252 211 77;
+  --c-amber-400: 251 191 36;
+  --page-bg: #020617;
+  --glow-a: rgba(16, 185, 129, 0.07);
+  --glow-b: rgba(244, 63, 94, 0.06);
   color-scheme: dark;
 }
 
+:root[data-theme="light"] {
+  --c-slate-50: 20 17 16;
+  --c-slate-100: 35 31 29;
+  --c-slate-200: 52 47 44;
+  --c-slate-300: 74 68 63;
+  --c-slate-400: 100 92 86;
+  --c-slate-500: 120 110 102;
+  --c-slate-600: 168 158 148;
+  --c-slate-700: 222 214 205;
+  --c-slate-800: 236 229 221;
+  --c-slate-900: 255 255 255;
+  --c-slate-950: 251 248 244;
+  --c-emerald-50: 2 44 34;
+  --c-emerald-100: 6 78 59;
+  --c-emerald-200: 6 95 70;
+  --c-emerald-300: 4 120 87;
+  --c-emerald-400: 5 150 105;
+  --c-rose-100: 136 19 55;
+  --c-rose-200: 159 18 57;
+  --c-rose-300: 190 18 60;
+  --c-rose-400: 225 29 72;
+  --c-sky-200: 3 105 161;
+  --c-pink-200: 190 24 93;
+  --c-amber-100: 120 53 15;
+  --c-amber-200: 146 64 14;
+  --c-amber-300: 180 83 9;
+  --c-amber-400: 217 119 6;
+  --page-bg: #fbf8f4;
+  --glow-a: rgba(16, 185, 129, 0.1);
+  --glow-b: rgba(244, 63, 94, 0.07);
+  color-scheme: light;
+}
+
 body {
-  background: #020617;
+  background: var(--page-bg);
   background-image:
-    radial-gradient(60rem 30rem at 10% -10%, rgba(16, 185, 129, 0.07), transparent 60%),
-    radial-gradient(50rem 28rem at 100% 0%, rgba(244, 63, 94, 0.06), transparent 60%);
+    radial-gradient(60rem 30rem at 10% -10%, var(--glow-a), transparent 60%),
+    radial-gradient(50rem 28rem at 100% 0%, var(--glow-b), transparent 60%);
   background-attachment: fixed;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Keep the photo hero dark in both themes (text sits on a photo). */
+.force-dark {
+  color: rgb(var(--c-slate-100));
 }
 
 input[type="range"] {

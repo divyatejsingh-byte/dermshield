@@ -91,6 +91,38 @@ export function inferCategory(active: string): ActiveCategory {
   return "other";
 }
 
+/**
+ * Classify a product from its full ingredient list (INCI text, as printed on the pack).
+ * Strong actives win over soothing ones: a retinol cream with ceramides is still a retinoid.
+ */
+export function inferCategoryFromIngredients(ingredients: string): {
+  category: ActiveCategory;
+  active: string;
+} {
+  const t = ingredients.toLowerCase();
+  const rules: Array<[ActiveCategory, RegExp]> = [
+    ["retinoid", /retinol|retinal\b|retinyl|adapalene|tretinoin|retinoate/],
+    [
+      "exfoliant",
+      /salicylic|glycolic|lactic acid|mandelic|azelaic|gluconolactone|lactobionic|benzoyl peroxide|\bbha\b|\baha\b/,
+    ],
+    ["vitaminC", /ascorbic|ascorbyl|tetrahexyldecyl ascorbate/],
+    [
+      "gentle",
+      /ceramide|panthenol|madecassoside|centella|hyaluron|squalane|niacinamide|allantoin|petrolatum|shea butter|glycerin/,
+    ],
+  ];
+  for (const [category, re] of rules) {
+    const hit = re.exec(t);
+    if (hit) {
+      const raw = hit[0].trim();
+      const word = raw === "bha" ? "BHA" : raw === "aha" ? "AHA" : raw;
+      return { category, active: word.charAt(0).toUpperCase() + word.slice(1) };
+    }
+  }
+  return { category: "other", active: "No strong actives found" };
+}
+
 export const CATEGORY_LABEL: Record<ActiveCategory, string> = {
   exfoliant: "Exfoliating acid",
   retinoid: "Retinoid",

@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { commerceState, computeShield, inferCategory, projectMetrics, stageForScore } from "@/lib/shieldEngine";
+import { FlaskConical } from "lucide-react";
+import { TIMELINE_DAYS, commerceState, computeShield, inferCategory, projectMetrics, stageForScore } from "@/lib/shieldEngine";
 import { clearScans, loadScans, saveScans, stageToStored } from "@/lib/scanStore";
-import type { ShelfProduct, SkinAnalysis, SkinMetrics, Stage, StoredScan } from "@/types/dermshield";
+import type { ActiveCategory, ShelfProduct, SkinAnalysis, SkinMetrics, Stage, StoredScan } from "@/types/dermshield";
 import BiometricsPanel from "./BiometricsPanel";
 import CommerceSection from "./CommerceSection";
 import Header from "./Header";
@@ -19,6 +20,7 @@ import HowItWorks from "./landing/HowItWorks";
 import Statement from "./landing/Statement";
 import { useScrollVars } from "./landing/useScrollVars";
 import { authClient } from "@/lib/auth/client";
+import { DEMO_METRICS, DEMO_PROFILE_LABEL, DEMO_SHELF } from "@/lib/demoProfile";
 
 export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
   // The day-1 scan. The scrubber projects recovery forward from this baseline.
@@ -29,6 +31,10 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
   const [heatmap, setHeatmap] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Sample "over-exfoliated" profile (no photo needed). While on, nothing is saved to the account.
+  const [demoProfile, setDemoProfile] = useState(false);
+  const [unlockedDay, setUnlockedDay] = useState(7);
+  const realShelfRef = useRef<ShelfProduct[]>([]);
 
   const [scans, setScans] = useState<StoredScan[]>([]);
   const [scansLoaded, setScansLoaded] = useState(false);
@@ -49,6 +55,7 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
       /* ignore */
     }
     if (on) window.scrollTo({ top: 0 });
+    else leaveDemoProfile();
   };
 
   const heroRef = useRef<HTMLElement>(null); // unused: PortalHero tracks its own progress
@@ -148,6 +155,106 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
     [userId],
   );
 
+  // Products you use: saved to your account when signed in, otherwise on this device.
+  const [shelfLoaded, setShelfLoaded] = useState(false);
+  const demoProfileRef = useRef(false);
+  demoProfileRef.current = demoProfile;
+  useEffect(() => {
+    if (sessionPending) return;
+    let cancelled = false;
+    setShelfLoaded(false);
+    const readLocal = (): ShelfProduct[] => {
+      try {
+        const raw = window.localStorage.getItem("dermshield_shelf");
+        const parsed: unknown = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? (parsed as ShelfProduct[]) : [];
+      } catch {
+        return [];
+      }
+    };
+    (async () => {
+      let list = readLocal();
+      if (userId) {
+        try {
+          const res = await fetch("/api/shelf");
+          const server = res.ok ? ((await res.json()) as { shelf: ShelfProduct[] }).shelf : [];
+          if (server.length > 0) list = server; // otherwise keep this device's list and save it below
+        } catch {
+          /* offline: use the device copy */
+        }
+      }
+      if (!cancelled) {
+        if (demoProfileRef.current) realShelfRef.current = list;
+        else setShelf(list);
+        setShelfLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, sessionPending]);
+
+  useEffect(() => {
+    if (!shelfLoaded || demoProfile) return;
+    try {
+      window.localStorage.setItem("dermshield_shelf", JSON.stringify(shelf));
+    } catch {
+      /* storage unavailable */
+    }
+    if (!userId) return;
+    const t = window.setTimeout(() => {
+      fetch("/api/shelf", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shelf }),
+      }).catch(() => {});
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [shelf, shelfLoaded, userId, demoProfile]);
+
+  const leaveDemoProfile = useCallback(() => {
+    setDemoProfile((on) => {
+      if (on) {
+        setShelf(realShelfRef.current);
+        setBaseline(null);
+        setDay(1);
+        setUnlockedDay(7);
+      }
+      return false;
+    });
+  }, []);
+
+  const startDemoProfile = useCallback(() => {
+    if (!demoProfile) realShelfRef.current = shelfRef.current;
+    setDemoProfile(true);
+    setBaseline(DEMO_METRICS);
+    setShelf(DEMO_SHELF);
+    setPhotoUrl(null);
+    setError(null);
+    setDay(1);
+    setUnlockedDay(1);
+    if (!userId) {
+      setGuestState(true);
+      try {
+        window.localStorage.setItem("dermshield_guest", "1");
+      } catch {
+        /* ignore */
+      }
+      const r = computeShield(DEMO_SHELF, DEMO_METRICS, 1);
+      recordScan(DEMO_METRICS, r.score, r.stage);
+    }
+    window.setTimeout(() => {
+      document.getElementById("console")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
+  }, [demoProfile, userId, recordScan]);
+
+  // The photo hero (a server-rendered slot) asks for the demo through a window event.
+  useEffect(() => {
+    const on = () => startDemoProfile();
+    window.addEventListener("dermshield:demo", on);
+    return () => window.removeEventListener("dermshield:demo", on);
+  }, [startDemoProfile]);
+
   const metrics = useMemo(() => (baseline ? projectMetrics(baseline, day) : null), [baseline, day]);
   const shield = useMemo(
     () => (metrics ? computeShield(shelf, metrics, day) : null),
@@ -183,6 +290,11 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
         throw new Error(body.error ?? "Skin analysis failed.");
       }
       const analysis = (await res.json()) as SkinAnalysis;
+      if (demoProfileRef.current) {
+        setDemoProfile(false);
+        setShelf(realShelfRef.current);
+      }
+      setUnlockedDay(7);
       setPhotoUrl(url);
       setBaseline(analysis.metrics);
       setDay(1);
@@ -201,10 +313,17 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
   const toggle = (id: string) =>
     setShelf((s) => s.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)));
 
-  const add = (name: string, active: string) =>
+  const add = (name: string, active: string, category?: ActiveCategory) =>
     setShelf((s) => [
       ...s,
-      { id: `custom-${Date.now()}`, name, active, category: inferCategory(active), enabled: true, custom: true },
+      {
+        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name,
+        active,
+        category: category ?? inferCategory(active),
+        enabled: true,
+        custom: true,
+      },
     ]);
 
   const remove = (id: string) => setShelf((s) => s.filter((p) => p.id !== id));
@@ -212,8 +331,8 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
   const authed = !!userId || guest;
 
   return (
-    <div className="min-h-screen">
-      <Nav authed={authed} guest={guest} onGuest={changeGuest} />
+    <div className="min-h-screen overflow-x-clip">
+      <Nav authed={authed} guest={guest} onGuest={changeGuest} onDemoProfile={startDemoProfile} />
       {authed ? (
         <Dashboard
           name={session?.user?.name?.split(" ")[0] ?? ""}
@@ -226,7 +345,7 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
           {hero}
           <Statement />
           <HowItWorks />
-          <RosterLedger shelf={shelf} shield={shield} metrics={metrics} />
+          <RosterLedger shelf={shelf} shield={shield} metrics={metrics} onAdd={add} />
           <RecoveryEngine baseline={baseline} day={day} onDay={changeDay} />
         </>
       )}
@@ -240,10 +359,24 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
         }}
       />
 
-      <section id="console" className="mx-auto max-w-7xl scroll-mt-16 space-y-6 px-4 py-24 sm:px-6">
-        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-400">
-          {authed ? "NEW SCAN" : "YOUR SKIN CHECK"}
-        </p>
+      <section id="console" className="mx-auto max-w-7xl scroll-mt-20 space-y-6 px-4 py-12 sm:px-6 md:py-24">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400">
+            {authed ? "NEW SCAN" : "YOUR SKIN CHECK"}
+          </p>
+          <button
+            onClick={startDemoProfile}
+            className="inline-flex items-center gap-2 rounded-full border border-amber-400/50 px-4 py-2 text-xs font-semibold text-amber-300 transition hover:bg-amber-400/10"
+          >
+            <FlaskConical className="h-3.5 w-3.5" /> {DEMO_PROFILE_LABEL}
+          </button>
+        </div>
+        {demoProfile && (
+          <p role="status" className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+            Demo profile: these are sample results for an over-exfoliated face, not your skin. Upload a photo or
+            take a selfie to replace them with your own.
+          </p>
+        )}
         {shield && <Header score={shield.score} stage={shield.stage} />}
         <div className="grid gap-8 lg:grid-cols-2">
           <BiometricsPanel
@@ -255,7 +388,6 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
             analyzing={analyzing}
             error={error}
           />
-          {shield && metrics ? (
           <ShelfAuditor
             shelf={shelf}
             shield={shield}
@@ -265,14 +397,24 @@ export default function DermShieldApp({ hero }: { hero?: React.ReactNode }) {
             onAdd={add}
             onRemove={remove}
           />
-          ) : (
-            <section className="flex items-center justify-center rounded-2xl border border-dashed border-slate-700 p-8 text-center text-sm text-slate-400">
-              Your Skin Shield Score and product check appear here after your first scan.
-            </section>
-          )}
         </div>
         <div id="timeline" className="scroll-mt-20">
-          {baseline && <TimelineScrubber day={day} onDay={changeDay} />}
+          {baseline && (
+            <TimelineScrubber
+              day={day}
+              onDay={changeDay}
+              unlockedDay={unlockedDay}
+              onAdvance={
+                unlockedDay < 7
+                  ? () => {
+                      const next = TIMELINE_DAYS.find((d) => d > unlockedDay) ?? 7;
+                      setUnlockedDay(next);
+                      setDay(next);
+                    }
+                  : undefined
+              }
+            />
+          )}
         </div>
         <div id="market" className="scroll-mt-20">
           <CommerceSection commerce={commerce} score={suggestScore ?? 0} scanned={suggestScore !== null} />

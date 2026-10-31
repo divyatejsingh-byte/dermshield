@@ -1,22 +1,33 @@
 import { NextResponse } from "next/server";
 import { commerceState, stageForScore } from "@/lib/shieldEngine";
-import type {
-  MarketListing,
-  MarketProduct,
-  MarketplaceResponse,
-  Merchant,
-} from "@/types/dermshield";
+import { CATALOG, type CatalogItem, type Channel } from "@/lib/storeCatalog";
+import type { MarketListing, MarketProduct, MarketplaceResponse, Merchant } from "@/types/dermshield";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MERCHANTS: Merchant[] = ["Amazon.in", "Flipkart", "Nykaa"];
+/** Retailers shown per channel. */
+const MERCHANTS: Record<Channel, Merchant[]> = {
+  commercial: ["Amazon.in", "Flipkart", "Nykaa"],
+  pharmacy: ["Tata 1mg", "Apollo Pharmacy", "Netmeds"],
+};
 
 const searchUrl = (m: Merchant, q: string) => {
   const e = encodeURIComponent(q);
-  if (m === "Amazon.in") return `https://www.amazon.in/s?k=${e}`;
-  if (m === "Flipkart") return `https://www.flipkart.com/search?q=${e}`;
-  return `https://www.nykaa.com/search/result/?q=${e}`;
+  switch (m) {
+    case "Amazon.in":
+      return `https://www.amazon.in/s?k=${e}`;
+    case "Flipkart":
+      return `https://www.flipkart.com/search?q=${e}`;
+    case "Nykaa":
+      return `https://www.nykaa.com/search/result/?q=${e}`;
+    case "Tata 1mg":
+      return `https://www.1mg.com/search/all?name=${e}`;
+    case "Apollo Pharmacy":
+      return `https://www.apollopharmacy.in/search-medicines/${e}`;
+    default:
+      return `https://www.netmeds.com/catalogsearch/result/${e}/all`;
+  }
 };
 
 /** Self-contained SVG product art (no external image dependency). */
@@ -31,80 +42,17 @@ function thumb(hue: number, shape: "tube" | "jar" | "bottle"): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-interface Seed {
-  id: string;
-  query: string;
-  title: string;
-  brand: string;
-  size: string;
-  /** Lower-case word the listing title must contain */
-  match: string;
-  benefit: string;
-  phase: 1 | 2;
-  tags: string[];
-  thumbnail: string;
-}
-
-const SEEDS: Seed[] = [
-  {
-    id: "lrp-cicaplast",
-    match: "cicaplast",
-    query: "La Roche-Posay Cicaplast Baume B5+ 40ml",
-    title: "La Roche-Posay Cicaplast Baume B5+ Soothing Repair Balm",
-    brand: "La Roche-Posay",
-    size: "40 ml",
-    benefit: "Panthenol + madecassoside calm redness and help your skin heal faster.",
-    phase: 1,
-    tags: ["Panthenol", "Madecassoside", "Fragrance-free"],
-    thumbnail: thumb(165, "tube"),
-  },
-  {
-    id: "avene-cicalfate",
-    match: "cicalfate",
-    query: "Avene Cicalfate+ Restorative Protective Cream 40ml",
-    title: "Avène Cicalfate+ Restorative Protective Cream",
-    brand: "Avène",
-    size: "40 ml",
-    benefit: "Thermal-water based shield for irritated, over-treated skin.",
-    phase: 1,
-    tags: ["Sucralfate", "Thermal water", "Post-treatment"],
-    thumbnail: thumb(28, "tube"),
-  },
-  {
-    id: "cerave-moisturising",
-    match: "moisturi",
-    query: "CeraVe Moisturising Cream 340g",
-    title: "CeraVe Moisturising Cream with Ceramides & Hyaluronic Acid",
-    brand: "CeraVe",
-    size: "340 g",
-    benefit: "3 essential ceramides help restore your natural shield and lock in water.",
-    phase: 2,
-    tags: ["Ceramides", "Hyaluronic acid", "Non-comedogenic"],
-    thumbnail: thumb(200, "jar"),
-  },
-  {
-    id: "bioderma-atoderm",
-    match: "atoderm",
-    query: "Bioderma Atoderm Intensive Baume 500ml",
-    title: "Bioderma Atoderm Intensive Baume Ultra-Soothing Balm",
-    brand: "Bioderma",
-    size: "500 ml",
-    benefit: "Rich, soothing balm that strengthens your skin's natural protection on dry, sensitive skin.",
-    phase: 2,
-    tags: ["Emollient", "Fragrance-free", "Dry skin"],
-    thumbnail: thumb(275, "bottle"),
-  },
-];
-
-const pick = (s: Seed) => ({
+const pick = (s: CatalogItem): Omit<MarketProduct, "listings"> => ({
   id: s.id,
+  channel: s.channel,
   title: s.title,
   brand: s.brand,
   size: s.size,
   benefit: s.benefit,
+  activeTag: s.activeTag,
   phase: s.phase,
   tags: s.tags,
-  thumbnail: s.thumbnail,
+  thumbnail: thumb(s.art.hue, s.art.shape),
 });
 
 /* ----------------------------- SerpApi ------------------------------ */
@@ -119,15 +67,28 @@ interface SerpResult {
   link?: string;
 }
 
-function merchantFromSource(source = ""): Merchant | null {
+function merchantFromSource(channel: Channel, source = ""): Merchant | null {
   const s = source.toLowerCase();
+  if (channel === "pharmacy") {
+    if (s.includes("1mg")) return "Tata 1mg";
+    if (s.includes("apollo")) return "Apollo Pharmacy";
+    if (s.includes("netmeds")) return "Netmeds";
+    return null;
+  }
   if (s.includes("amazon")) return "Amazon.in";
   if (s.includes("flipkart")) return "Flipkart";
   if (s.includes("nykaa")) return "Nykaa";
   return null;
 }
 
-async function liveListings(seed: Seed, apiKey: string): Promise<MarketListing[]> {
+/** Multi-packs, combos and kits would make one price look like another product's. */
+const BUNDLE = /pack of|combo|bundle|\bkit\b|\bset\b|\d\s?x\s?\d|\bx\s?\d\b|\d\s?x\b|\d\s?(?:ml|gm|g)\s*(?:&|and|\+)\s*\w/;
+
+/**
+ * `strict` (used for the savings reference) also drops listings that don't state their pack size,
+ * so a per-gram price is never worked out from the wrong size.
+ */
+async function liveListings(seed: CatalogItem, apiKey: string, strict = false): Promise<MarketListing[]> {
   const params = new URLSearchParams({
     engine: "google_shopping",
     q: seed.query,
@@ -137,7 +98,7 @@ async function liveListings(seed: Seed, apiKey: string): Promise<MarketListing[]
     api_key: apiKey,
   });
   const res = await fetch(`https://serpapi.com/search.json?${params}`, {
-    signal: AbortSignal.timeout(7000),
+    signal: AbortSignal.timeout(8000),
     next: { revalidate: 3600 },
   });
   if (!res.ok) throw new Error(`SerpApi ${res.status}`);
@@ -145,63 +106,148 @@ async function liveListings(seed: Seed, apiKey: string): Promise<MarketListing[]
 
   const found = new Map<Merchant, MarketListing>();
   for (const r of data.shopping_results ?? []) {
-    const merchant = merchantFromSource(r.source);
+    const merchant = merchantFromSource(seed.channel, r.source);
     if (!merchant || found.has(merchant) || !r.extracted_price) continue;
-    // Skip look-alikes: the title must name the product line, and any pack size it states must match.
+    // Skip look-alikes: the title must name the product, and any pack size it states must match.
     const title = (r.title ?? "").toLowerCase();
-    if (!title.includes(seed.match)) continue;
+    if (!seed.match.every((w) => title.includes(w)) || BUNDLE.test(title)) continue;
     const sized = title.match(/(\d+)\s?(?:ml|gm|g)\b/);
     if (sized && sized[1] !== seed.size.replace(/[^0-9]/g, "")) continue;
+    if (strict && !sized) continue;
     found.set(merchant, {
       merchant,
       price: r.extracted_price,
       rating: r.rating ?? 0,
       // SerpApi sometimes returns thousands as a decimal (1.4 meaning 1.4K).
-      reviews: r.reviews && r.reviews < 10 && !Number.isInteger(r.reviews) ? Math.round(r.reviews * 1000) : (r.reviews ?? 0),
+      reviews:
+        r.reviews && r.reviews < 10 && !Number.isInteger(r.reviews)
+          ? Math.round(r.reviews * 1000)
+          : (r.reviews ?? 0),
       url: r.product_link ?? r.link ?? searchUrl(merchant, seed.query),
     });
   }
-  return Array.from(found.values());
+  return MERCHANTS[seed.channel].map((m) => found.get(m)).filter((l): l is MarketListing => !!l);
+}
+
+const cheapest = (l: MarketListing[]) => Math.min(...l.map((x) => x.price));
+const amount = (size: string) => Number(size.replace(/[^0-9.]/g, "")) || 0;
+
+/** Safe wrapper: one failing search never takes the whole store down. */
+async function safeListings(seed: CatalogItem, apiKey: string, strict = false) {
+  try {
+    return await liveListings(seed, apiKey, strict);
+  } catch (err) {
+    console.warn("[marketplace] SerpApi failed:", (err as Error).message);
+    return [];
+  }
+}
+
+/**
+ * Cheapest clean price for the savings reference: any seller, but the title must state exactly the
+ * pack size we assume, and must not be a combo. Returns null when nothing clean is found.
+ */
+async function referencePrice(seed: CatalogItem, apiKey: string): Promise<number | null> {
+  try {
+    const params = new URLSearchParams({
+      engine: "google_shopping",
+      q: seed.query,
+      gl: "in",
+      hl: "en",
+      google_domain: "google.co.in",
+      api_key: apiKey,
+    });
+    const res = await fetch(`https://serpapi.com/search.json?${params}`, {
+      signal: AbortSignal.timeout(8000),
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { shopping_results?: SerpResult[] };
+    const prices: number[] = [];
+    for (const r of data.shopping_results ?? []) {
+      const title = (r.title ?? "").toLowerCase();
+      const sized = title.match(/(\d+)\s?(?:ml|gm|g)\b/);
+      if (!r.extracted_price || !seed.match.every((w) => title.includes(w)) || BUNDLE.test(title)) continue;
+      if (!sized || sized[1] !== seed.size.replace(/[^0-9]/g, "")) continue;
+      prices.push(r.extracted_price);
+    }
+    return prices.length ? Math.min(...prices) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(req: Request) {
-  // The Shield Score decides what may be sold: the engine, not the client, gates the store.
-  const score = Number(new URL(req.url).searchParams.get("score"));
-  if (!Number.isFinite(score)) {
-    return NextResponse.json({ error: "A Skin Shield Score is required." }, { status: 400 });
+  const params = new URL(req.url).searchParams;
+  const channel: Channel = params.get("channel") === "pharmacy" ? "pharmacy" : "commercial";
+  // A locked store can still tease two products (with live prices) so people see what unlocks.
+  const preview = params.get("preview") === "1";
+
+  let tier: "none" | "soothing" | "full" = "none";
+  let seeds: CatalogItem[];
+  if (preview) {
+    seeds = CATALOG.filter((s) => s.channel === "commercial"); // cached for an hour; first two with prices are shown
+  } else {
+    // The Shield Score decides what may be sold: the engine, not the client, gates the store.
+    const score = Number(params.get("score"));
+    if (!Number.isFinite(score)) {
+      return NextResponse.json({ error: "A Skin Shield Score is required." }, { status: 400 });
+    }
+    const commerce = commerceState(stageForScore(score));
+    if (!commerce.unlocked || commerce.tier === "none") {
+      return NextResponse.json(
+        { error: "Purchases are paused until your Skin Shield Score reaches 50." },
+        { status: 403 },
+      );
+    }
+    tier = commerce.tier;
+    seeds = CATALOG.filter((s) => s.channel === channel && (tier === "full" || s.phase === 1));
   }
-  const commerce = commerceState(stageForScore(score));
-  if (!commerce.unlocked || commerce.tier === "none") {
-    return NextResponse.json(
-      { error: "Purchases are paused until your Skin Shield Score reaches 50." },
-      { status: 403 },
-    );
-  }
-  const tier = commerce.tier;
-  const seeds = SEEDS.filter((s) => tier === "full" || s.phase === 1);
 
   const apiKey = process.env.SERPAPI_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "Live prices aren't configured (SERPAPI_API_KEY is missing)." }, { status: 503 });
   }
 
-  const results = await Promise.all(
-    seeds.map(async (seed): Promise<MarketProduct | null> => {
-      try {
-        const listings = await liveListings(seed, apiKey);
-        if (listings.length === 0) return null;
-        return { ...pick(seed), listings };
-      } catch (err) {
-        console.warn("[marketplace] SerpApi failed:", (err as Error).message);
-        return null;
-      }
-    }),
-  );
-  const products = results.filter((p): p is MarketProduct => p !== null);
+  // The pharmacy tab also needs popular-brand moisturiser prices, to work out the savings badge.
+  const referenceSeeds =
+    !preview && channel === "pharmacy" ? CATALOG.filter((s) => s.savingsReference) : [];
+
+  const [results, referenceResults] = await Promise.all([
+    Promise.all(seeds.map((s) => safeListings(s, apiKey))),
+    Promise.all(referenceSeeds.map((s) => referencePrice(s, apiKey))),
+  ]);
+
+  // Reference: median price per 100 g/ml of popular-brand moisturisers (cheapest listing of each).
+  const units = referenceSeeds
+    .map((s, i) => (referenceResults[i] !== null && amount(s.size) ? ((referenceResults[i] as number) / amount(s.size)) * 100 : null))
+    .filter((u): u is number => u !== null)
+    .sort((a, b) => a - b);
+  const referenceUnit = units.length ? units[Math.floor(units.length / 2)] : null;
+  const referenceNames = referenceSeeds.filter((_, i) => referenceResults[i] !== null).map((s) => s.brand);
+
+  let products: MarketProduct[] = [];
+  seeds.forEach((seed, i) => {
+    let listings = results[i];
+    // A price under 40% of the dearest listing is almost always a different (smaller) pack: drop it.
+    if (listings.length > 1) {
+      const top = Math.max(...listings.map((l) => l.price));
+      listings = listings.filter((l) => l.price >= top * 0.4);
+    }
+    if (listings.length === 0) return;
+    const product: MarketProduct = { ...pick(seed), listings };
+    if (channel === "pharmacy" && !preview && referenceUnit && amount(seed.size)) {
+      // What the same amount would cost in popular brands, minus what this costs.
+      const save = Math.round((referenceUnit * amount(seed.size)) / 100 - cheapest(listings));
+      if (save >= 50) product.savings = { amount: save, versus: referenceNames.join(", ") };
+    }
+    products.push(product);
+  });
+  if (preview) products = products.slice(0, 2);
+
   if (products.length === 0) {
     return NextResponse.json({ error: "Couldn't load live prices right now. Please try again." }, { status: 502 });
   }
 
-  const body: MarketplaceResponse = { source: "serpapi", tier, products };
+  const body: MarketplaceResponse = { source: "serpapi", channel, tier, products };
   return NextResponse.json(body);
 }

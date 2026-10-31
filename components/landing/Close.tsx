@@ -1,6 +1,6 @@
 export default function Close() {
   return (
-    <section className="relative flex min-h-screen flex-col overflow-hidden px-6 pt-28 md:px-16">
+    <section className="relative flex flex-col overflow-hidden px-5 pt-14 md:min-h-screen md:px-16 md:pt-28">
       <div className="grid flex-1 content-start gap-12 md:grid-cols-[1.4fr_1fr]">
         <div>
           <h2 className="max-w-[16ch] font-display text-[clamp(36px,6.4vw,96px)] font-bold leading-[0.97] tracking-tight">

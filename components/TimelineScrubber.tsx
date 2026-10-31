@@ -1,15 +1,19 @@
 "use client";
 
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, Lock } from "lucide-react";
 import { TIMELINE_DAYS, dayLabel } from "@/lib/shieldEngine";
 import { cn } from "@/lib/utils";
 
 interface Props {
   day: number;
   onDay: (day: number) => void;
+  /** Days after this are locked (demo profile unlocks one step at a time). Default: all unlocked. */
+  unlockedDay?: number;
+  /** Shown while some days are still locked: reveal the next day. */
+  onAdvance?: () => void;
 }
 
-export default function TimelineScrubber({ day, onDay }: Props) {
+export default function TimelineScrubber({ day, onDay, unlockedDay = 7, onAdvance }: Props) {
   const idx = TIMELINE_DAYS.findIndex((d) => d === day);
   const pct = idx < 0 ? 0 : (idx / (TIMELINE_DAYS.length - 1)) * 100;
 
@@ -32,11 +36,13 @@ export default function TimelineScrubber({ day, onDay }: Props) {
           {TIMELINE_DAYS.map((d) => {
             const reached = d <= day;
             const current = d === day;
+            const locked = d > unlockedDay;
             return (
               <li key={d} className="flex w-0 flex-col items-center">
                 <button
-                  onClick={() => onDay(d)}
-                  aria-label={`Day ${d}: ${dayLabel(d)}`}
+                  onClick={() => !locked && onDay(d)}
+                  disabled={locked}
+                  aria-label={`Day ${d}: ${dayLabel(d)}${locked ? " (locked)" : ""}`}
                   aria-current={current ? "step" : undefined}
                   className={cn(
                     "z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-semibold transition",
@@ -45,9 +51,10 @@ export default function TimelineScrubber({ day, onDay }: Props) {
                       : reached
                         ? "border-emerald-500/60 bg-slate-900 text-emerald-300"
                         : "border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-500",
+                    locked && "cursor-not-allowed opacity-50 hover:border-slate-700",
                   )}
                 >
-                  {d}
+                  {locked ? <Lock className="h-3.5 w-3.5" /> : d}
                 </button>
                 <span
                   className={cn(
@@ -63,6 +70,20 @@ export default function TimelineScrubber({ day, onDay }: Props) {
           })}
         </ol>
       </div>
+
+      {onAdvance && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-4">
+          <p className="text-xs text-slate-400">
+            Starts at Day {unlockedDay}. Unlock the next step to watch your skin heal.
+          </p>
+          <button
+            onClick={onAdvance}
+            className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-emerald-400"
+          >
+            Unlock next day
+          </button>
+        </div>
+      )}
     </section>
   );
 }

@@ -68,7 +68,7 @@ export default function ProgressHistory({
   const recent = [...scans].reverse().slice(0, 6);
 
   return (
-    <section id="progress" className="scroll-mt-24 px-6 pb-24 md:px-16">
+    <section id="progress" className="scroll-mt-20 px-5 pb-12 md:px-16 md:pb-24">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-400">

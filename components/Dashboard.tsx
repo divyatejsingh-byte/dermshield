@@ -104,7 +104,7 @@ export default function Dashboard({ name, guest, scans, loaded }: Props) {
             };
 
   return (
-    <section id="dashboard" className="mx-auto max-w-7xl px-4 pb-6 pt-24 sm:px-6">
+    <section id="dashboard" className="mx-auto max-w-7xl px-4 pb-6 pt-20 sm:px-6 md:pt-24">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-400">

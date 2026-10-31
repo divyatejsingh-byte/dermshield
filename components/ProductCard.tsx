@@ -9,6 +9,9 @@ const MERCHANT_STYLE: Record<Merchant, string> = {
   "Amazon.in": "data-[on=true]:bg-amber-500/20 data-[on=true]:text-amber-200 data-[on=true]:ring-amber-500/50",
   Flipkart: "data-[on=true]:bg-sky-500/20 data-[on=true]:text-sky-200 data-[on=true]:ring-sky-500/50",
   Nykaa: "data-[on=true]:bg-pink-500/20 data-[on=true]:text-pink-200 data-[on=true]:ring-pink-500/50",
+  "Tata 1mg": "data-[on=true]:bg-rose-500/20 data-[on=true]:text-rose-200 data-[on=true]:ring-rose-500/50",
+  "Apollo Pharmacy": "data-[on=true]:bg-sky-500/20 data-[on=true]:text-sky-200 data-[on=true]:ring-sky-500/50",
+  Netmeds: "data-[on=true]:bg-emerald-500/20 data-[on=true]:text-emerald-200 data-[on=true]:ring-emerald-500/50",
 };
 
 export default function ProductCard({ product }: { product: MarketProduct }) {
@@ -17,7 +20,7 @@ export default function ProductCard({ product }: { product: MarketProduct }) {
   const listing = product.listings.find((l) => l.merchant === selected) ?? cheapest;
 
   return (
-    <article className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition hover:border-emerald-500/40">
+    <article className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition hover:border-emerald-500/40">
       <div className="flex gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -27,13 +30,19 @@ export default function ProductCard({ product }: { product: MarketProduct }) {
         />
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wider text-slate-500">
-            {product.brand} · {product.size}
+            {product.brand} · {product.size} · {product.channel === "pharmacy" ? "Pharmacy essential" : "Brand"}
           </p>
           <h3 className="text-sm font-semibold leading-snug text-slate-100">{product.title}</h3>
         </div>
       </div>
 
       <p className="mt-3 text-xs text-slate-400">{product.benefit}</p>
+      {product.activeTag && (
+        <p className="mt-2 text-xs text-slate-300">
+          <span className="text-slate-500">Active: </span>
+          {product.activeTag}
+        </p>
+      )}
       <div className="mt-2 flex flex-wrap gap-1.5">
         {product.tags.map((t) => (
           <span key={t} className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-300">
@@ -41,6 +50,15 @@ export default function ProductCard({ product }: { product: MarketProduct }) {
           </span>
         ))}
       </div>
+
+      {product.savings && (
+        <p
+          title={`Compared with ${product.savings.versus}, per amount`}
+          className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 ring-1 ring-emerald-500/40"
+        >
+          Save ~{inr(product.savings.amount)} vs popular brands
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-1.5" role="tablist" aria-label="Store">
         {product.listings.map((l) => (

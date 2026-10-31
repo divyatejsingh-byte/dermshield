@@ -29,7 +29,7 @@ export default function RecoveryEngine({ baseline, day, onDay }: Props) {
   const go = (i: number) => onDay(PHASES[(i + PHASES.length) % PHASES.length].day);
 
   return (
-    <section id="engine" className="grid min-h-screen items-center gap-14 px-6 py-24 md:grid-cols-2 md:px-16">
+    <section id="engine" className="grid scroll-mt-20 items-center gap-10 px-5 py-12 md:min-h-screen md:grid-cols-2 md:gap-14 md:px-16 md:py-24">
       <div>
         <p className="mb-5 font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-400">
           TRACK HEALING
