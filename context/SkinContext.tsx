@@ -87,7 +87,8 @@ export interface SkinState {
   shelf: ShelfProduct[];
   auditedProducts: AuditedProduct[];
   toggleProduct: (id: string) => void;
-  addProductToAudit: (product: AuditInput) => void;
+  /** Adds a product and returns its id, so callers can look up how the audit judged it */
+  addProductToAudit: (product: AuditInput) => string;
   removeProductFromAudit: (id: string) => void;
 
   photoUrl: string | null;
@@ -519,21 +520,14 @@ export function SkinProvider({ children }: { children: React.ReactNode }) {
     (id: string) => setShelf((s) => s.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p))),
     [],
   );
-  const addProduct = useCallback(
-    (name: string, active: string, category?: ActiveCategory) =>
-      setShelf((s) => [
-        ...s,
-        {
-          id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          name,
-          active,
-          category: category ?? inferCategory(active),
-          enabled: true,
-          custom: true,
-        },
-      ]),
-    [],
-  );
+  const addProduct = useCallback((name: string, active: string, category?: ActiveCategory): string => {
+    const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setShelf((s) => [
+      ...s,
+      { id, name, active, category: category ?? inferCategory(active), enabled: true, custom: true },
+    ]);
+    return id;
+  }, []);
   const removeProduct = useCallback((id: string) => setShelf((s) => s.filter((p) => p.id !== id)), []);
 
   const addProductToAudit = useCallback(

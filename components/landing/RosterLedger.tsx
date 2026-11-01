@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { Camera, ShieldCheck } from "lucide-react";
 import { HARSH_CATEGORIES, flushRisk, ledgerRows, type LedgerStatus } from "@/lib/shieldEngine";
 import { QUICK_PRODUCTS } from "@/lib/quickProducts";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
@@ -26,9 +26,11 @@ interface Props {
   onAdd: (name: string, active: string, category?: ActiveCategory) => void;
   /** Shown while nothing is scanned: fills the page with the sample profile */
   onLoadDemo?: () => void;
+  /** Opens the bottle-label camera scanner */
+  onScanLabel?: () => void;
 }
 
-export default function RosterLedger({ shelf, shield, metrics, onAdd, onLoadDemo }: Props) {
+export default function RosterLedger({ shelf, shield, metrics, onAdd, onLoadDemo, onScanLabel }: Props) {
   const verdicts = new Map((shield?.evaluation.verdicts ?? []).map((v) => [v.product.id, v]));
   const rows = shelf.filter((p) => p.enabled);
   // Before a scan the rows still list what we check and the healthy ranges, with no readings.
@@ -81,9 +83,19 @@ export default function RosterLedger({ shelf, shield, metrics, onAdd, onLoadDemo
         )}
         {(rows.length === 0 || !metrics) && (
           <div className="mb-6 mt-5">
-            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Quick add: tap the products you use
-            </p>
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              {onScanLabel && (
+                <button
+                  onClick={onScanLabel}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
+                >
+                  <Camera className="h-4 w-4" /> Scan Bottle Label
+                </button>
+              )}
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {onScanLabel ? "Or tap the products you use" : "Quick add: tap the products you use"}
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2">
               {QUICK_PRODUCTS.map((q) => {
                 const added = shelf.some((p) => p.name === q.name);
