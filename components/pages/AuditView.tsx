@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Camera, CheckCircle2, ShieldAlert, X } from "lucide-react";
 import BottleScanner from "../BottleScanner";
+import DemoBanner from "../DemoBanner";
 import PageShell from "../PageShell";
 import PageSkeleton from "../PageSkeleton";
 import RosterLedger from "../landing/RosterLedger";
@@ -118,6 +119,7 @@ export default function AuditView() {
       )}
 
       <div className="pt-14 md:pt-16">
+        <DemoBanner className="mx-5 mt-8 md:mx-16" />
         <RosterLedger
           shelf={s.shelf}
           shield={s.shield}

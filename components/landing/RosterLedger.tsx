@@ -54,11 +54,11 @@ export default function RosterLedger({ shelf, shield, metrics, onAdd, onLoadDemo
               </span>
               <div>
                 <h3 className="font-display text-xl font-semibold">
-                  {metrics ? "Add the products you use" : "Your product check starts with a scan"}
+                  {metrics ? "No products audited yet." : "Your product check starts with a scan"}
                 </h3>
                 <p className="mt-1 max-w-lg text-sm text-slate-400">
                   {metrics
-                    ? "Add your cleanser, serums and creams in the skin check below. We'll tell you which to keep and which to pause."
+                    ? `Scan a bottle label or tap common products below to see if they are safe for your current skin redness (${Math.round(metrics.redness)}/100).`
                     : "Scan your skin first. Then add your products and we'll tell you which to keep and which to pause."}
                 </p>
               </div>
@@ -81,44 +81,42 @@ export default function RosterLedger({ shelf, shield, metrics, onAdd, onLoadDemo
             </div>
           </div>
         )}
-        {(rows.length === 0 || !metrics) && (
-          <div className="mb-6 mt-5">
-            <div className="mb-3 flex flex-wrap items-center gap-3">
-              {onScanLabel && (
-                <button
-                  onClick={onScanLabel}
-                  className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
-                >
-                  <Camera className="h-4 w-4" /> Scan Bottle Label
-                </button>
-              )}
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {onScanLabel ? "Or tap the products you use" : "Quick add: tap the products you use"}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {QUICK_PRODUCTS.map((q) => {
-                const added = shelf.some((p) => p.name === q.name);
-                return (
-                  <button
-                    key={q.label}
-                    onClick={() => !added && onAdd(q.name, q.active, q.category)}
-                    disabled={added}
-                    className={cn(
-                      "rounded-full border px-3.5 py-2 text-sm transition",
-                      added
-                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                        : "border-slate-700 bg-slate-900/60 text-slate-200 hover:border-emerald-500 hover:text-emerald-300",
-                    )}
-                  >
-                    {added ? "✓ " : "+ "}
-                    {q.label}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="mb-6 mt-5">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            {onScanLabel && (
+              <button
+                onClick={onScanLabel}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
+              >
+                <Camera className="h-4 w-4" /> Scan Bottle Label
+              </button>
+            )}
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {onScanLabel ? (rows.length ? "Add more: tap a product" : "Or tap the products you use") : "Quick add: tap the products you use"}
+            </p>
           </div>
-        )}
+          <div className="flex flex-wrap gap-2">
+            {QUICK_PRODUCTS.map((q) => {
+              const added = shelf.some((p) => p.name === q.name);
+              return (
+                <button
+                  key={q.label}
+                  onClick={() => !added && onAdd(q.name, q.active, q.category)}
+                  disabled={added}
+                  className={cn(
+                    "rounded-full border px-3.5 py-2 text-sm transition",
+                    added
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                      : "border-slate-700 bg-slate-900/60 text-slate-200 hover:border-emerald-500 hover:text-emerald-300",
+                  )}
+                >
+                  {added ? "✓ " : "+ "}
+                  {q.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {rows.length > 0 && (
         <ul className="border-t border-slate-800">
           {rows.map((p) => {

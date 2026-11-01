@@ -24,6 +24,7 @@ export default function ShelfAuditor({ shelf, shield, metrics, day, onToggle, on
   const [active, setActive] = useState("");
   const [scanning, setScanning] = useState(false);
   const evaluation = shield?.evaluation ?? null;
+  const activeCount = shelf.filter((p) => p.enabled).length;
   const verdictById = new Map((evaluation?.verdicts ?? []).map((v) => [v.product.id, v]));
   const inferred = active.trim() ? CATEGORY_LABEL[inferCategory(active)] : null;
 
@@ -42,7 +43,7 @@ export default function ShelfAuditor({ shelf, shield, metrics, day, onToggle, on
       </h2>
 
       {/* Audit summary card */}
-      {evaluation && metrics ? (
+      {evaluation && metrics && activeCount > 0 ? (
       <div
         className={cn(
           "rounded-2xl border p-4 transition-colors",
@@ -58,10 +59,13 @@ export default function ShelfAuditor({ shelf, shield, metrics, day, onToggle, on
           <div className="flex gap-3">
             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-400" />
             <div>
-              <p className="font-semibold text-rose-200">Too many strong products at once.</p>
+              <p className="font-semibold text-rose-200">
+                {evaluation.harshCount > 1 ? "Too many strong products at once." : "A strong product is risky right now."}
+              </p>
               <p className="mt-1 text-sm text-rose-100/80">
-                Mixing harsh acids or retinols on raw skin can cause chemical burns. We&apos;ve paused them
-                for 5 days so your skin can rest.
+                {evaluation.harshCount > 1
+                  ? "Mixing harsh acids or retinols on raw skin can cause chemical burns. We've paused them for 5 days so your skin can rest."
+                  : "A harsh acid or retinol on raw skin can cause stinging and chemical burns. We've paused it for 5 days so your skin can rest."}
               </p>
               <p className="mt-2 text-xs text-rose-200/70">
                 {evaluation.harshCount} harsh product{evaluation.harshCount > 1 ? "s" : ""} in your routine
@@ -95,9 +99,19 @@ export default function ShelfAuditor({ shelf, shield, metrics, day, onToggle, on
         )}
       </div>
       ) : (
-        <p className="rounded-2xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">
-          Add the products you use now. After your face scan, we&apos;ll tell you which to keep and which to pause.
-        </p>
+        <div className="rounded-2xl border border-dashed border-slate-700 p-4 text-sm text-slate-400">
+          {metrics ? (
+            <>
+              <p className="font-semibold text-slate-200">No products audited yet.</p>
+              <p className="mt-1">
+                Scan a bottle label or add a product below to see if it is safe for your current skin redness (
+                {Math.round(metrics.redness)}/100).
+              </p>
+            </>
+          ) : (
+            "Add the products you use now. After your face scan, we'll tell you which to keep and which to pause."
+          )}
+        </div>
       )}
 
       {/* Shelf */}

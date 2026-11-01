@@ -3,11 +3,45 @@
 import Link from "next/link";
 import { FlaskConical } from "lucide-react";
 import BiometricsPanel from "../BiometricsPanel";
+import DemoBanner from "../DemoBanner";
 import Header from "../Header";
 import PageShell from "../PageShell";
 import PageSkeleton from "../PageSkeleton";
 import ShelfAuditor from "../ShelfAuditor";
 import { useSkin } from "@/context/SkinContext";
+
+/** What the face scan itself shows: symptoms. It says nothing about which products the user owns. */
+function Diagnosis({ redness }: { redness: number }) {
+  const irritated = redness > 35;
+  const audit = (
+    <Link href="/audit" className="font-semibold underline underline-offset-2 hover:opacity-80">
+      Product Audit
+    </Link>
+  );
+  return (
+    <div
+      role="status"
+      className={
+        irritated
+          ? "rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200"
+          : "rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm leading-relaxed text-emerald-200"
+      }
+    >
+      {irritated ? (
+        <>
+          <strong className="font-semibold">Barrier Disruption Detected (Redness: {redness}/100).</strong> Your outer skin
+          layer is irritated. Strong chemical actives will worsen this stinging. Go to {audit} to check which of your
+          bottles are safe to keep.
+        </>
+      ) : (
+        <>
+          <strong className="font-semibold">Skin Looks Calm (Redness: {redness}/100).</strong> Your outer skin layer is
+          holding up well. Go to {audit} to check that your bottles keep it that way.
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function ScanView() {
   const s = useSkin();
@@ -31,13 +65,9 @@ export default function ScanView() {
             </button>
           </div>
         )}
-        {s.demoProfile && (
-          <p role="status" className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-            Demo profile: these are sample results for an over-exfoliated face, not your skin. Upload a photo or take a
-            selfie to replace them with your own.
-          </p>
-        )}
+        <DemoBanner />
         <Header score={s.shield?.score ?? null} stage={s.shield?.stage ?? null} />
+        {s.metrics.isScanned && <Diagnosis redness={Math.round(s.metrics.redness)} />}
         <div className="grid gap-8 lg:grid-cols-2">
           <BiometricsPanel
             metrics={s.readings}
