@@ -206,7 +206,7 @@ export default function CommerceSection({
       <p className="mb-5 text-xs text-slate-400" aria-live="polite">
         {channel === "pharmacy"
           ? "Simple pharmacy formulations from Indian pharma brands (like Oryza from Alembic), usually much cheaper per gram than big brands."
-          : "Popular consumer derm-tested brands (CeraVe, Cetaphil, Minimalist, La Roche-Posay, Avène)."}
+          : "Popular consumer skincare brands (CeraVe, Cetaphil, Minimalist, La Roche-Posay, Avène)."}
       </p>
 
       {!data && !failed && (

@@ -244,7 +244,7 @@ export default function PortalHero() {
             Redness &amp; Irritation Check
           </span>
           <span className="absolute bottom-6 right-5 max-w-[44vw] text-right md:bottom-10 md:right-10">
-            Doctor-Approved Reset
+            5-Day Skin Reset
           </span>
         </div>
       </div>
