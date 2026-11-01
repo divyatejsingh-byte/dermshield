@@ -183,6 +183,7 @@ export async function GET(req: Request) {
   const preview = params.get("preview") === "1";
 
   let tier: "none" | "soothing" | "full" = "none";
+  let recovery = false;
   let seeds: CatalogItem[];
   if (preview) {
     seeds = CATALOG.filter((s) => s.channel === "commercial"); // cached for an hour; first two with prices are shown
@@ -200,6 +201,12 @@ export async function GET(req: Request) {
       );
     }
     tier = commerce.tier;
+    // Redness above 40 means the skin is still inflamed: even a high score only opens soothing care.
+    const redness = Number(params.get("redness"));
+    if (Number.isFinite(redness) && params.get("redness") !== null && redness > 40 && tier === "full") {
+      tier = "soothing";
+      recovery = true;
+    }
     seeds = CATALOG.filter((s) => s.channel === channel && (tier === "full" || s.phase === 1));
   }
 
@@ -248,6 +255,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Couldn't load live prices right now. Please try again." }, { status: 502 });
   }
 
-  const body: MarketplaceResponse = { source: "serpapi", channel, tier, products };
+  // While soothing-only, show the richer products as locked cards (no prices fetched for them).
+  if (!preview && tier === "soothing") {
+    for (const seed of CATALOG) {
+      if (seed.channel === channel && seed.phase === 2) products.push({ ...pick(seed), listings: [], locked: true });
+    }
+  }
+
+  const body: MarketplaceResponse = { source: "serpapi", channel, tier, recovery, products };
   return NextResponse.json(body);
 }

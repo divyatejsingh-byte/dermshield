@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import AppProvider from "@/components/AppProvider";
+import { SkinProvider } from "@/context/SkinContext";
 import Footer from "@/components/Footer";
 import Nav from "@/components/landing/Nav";
 
@@ -24,13 +24,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "if('scrollRestoration' in history)history.scrollRestoration='manual';try{var t=localStorage.getItem('dermshield_theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}",
           }}
         />
-        <AppProvider>
+        <SkinProvider>
           <div className="min-h-screen overflow-x-clip">
             <Nav />
             {children}
             <Footer />
           </div>
-        </AppProvider>
+        </SkinProvider>
       </body>
     </html>
   );

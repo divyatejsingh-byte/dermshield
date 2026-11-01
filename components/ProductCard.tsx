@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Star, Tag } from "lucide-react";
+import { ExternalLink, Lock, Star, Tag } from "lucide-react";
 import { cn, inr } from "@/lib/utils";
 import type { MarketProduct, Merchant } from "@/types/dermshield";
 
@@ -14,7 +14,34 @@ const MERCHANT_STYLE: Record<Merchant, string> = {
   Netmeds: "data-[on=true]:bg-emerald-500/20 data-[on=true]:text-emerald-200 data-[on=true]:ring-emerald-500/50",
 };
 
+/** Held back while the skin recovers: same card, blurred art and a lock, no prices. */
+function LockedProductCard({ product }: { product: MarketProduct }) {
+  return (
+    <article className="flex h-full flex-col rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-4">
+      <div className="flex gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={product.thumbnail} alt="" className="h-20 w-20 shrink-0 rounded-xl border border-slate-800 object-cover opacity-60 blur-[2px]" />
+        <div className="min-w-0">
+          <p className="text-[11px] uppercase tracking-wider text-slate-500">
+            {product.brand} · {product.size}
+          </p>
+          <h3 className="text-sm font-semibold leading-snug text-slate-300">{product.title}</h3>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-slate-500">{product.benefit}</p>
+      <p className="mt-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-rose-500/10 px-2.5 py-1 text-[11px] font-semibold text-rose-300 ring-1 ring-rose-500/30">
+        <Lock className="h-3 w-3" /> Locked while redness is high
+      </p>
+      <p className="mt-2 text-[11px] text-slate-500">Opens when redness drops under 40 and your score reaches 75.</p>
+    </article>
+  );
+}
+
 export default function ProductCard({ product }: { product: MarketProduct }) {
+  return product.locked ? <LockedProductCard product={product} /> : <LiveProductCard product={product} />;
+}
+
+function LiveProductCard({ product }: { product: MarketProduct }) {
   const cheapest = product.listings.reduce((a, b) => (b.price < a.price ? b : a));
   const [selected, setSelected] = useState<Merchant>(cheapest.merchant);
   const listing = product.listings.find((l) => l.merchant === selected) ?? cheapest;

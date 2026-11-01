@@ -53,10 +53,13 @@ export default function CommerceSection({
   commerce,
   score,
   scanned,
+  redness = null,
 }: {
   commerce: CommerceState;
   score: number;
   scanned: boolean;
+  /** Latest redness reading; above 40 holds the richer products back */
+  redness?: number | null;
 }) {
   const [data, setData] = useState<MarketplaceResponse | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
@@ -85,7 +88,7 @@ export default function CommerceSection({
     let cancelled = false;
     setData(null);
     setFailed(null);
-    fetch(`/api/marketplace?channel=${channel}&score=${Math.round(score)}`)
+    fetch(`/api/marketplace?channel=${channel}&score=${Math.round(score)}${redness !== null ? `&redness=${Math.round(redness)}` : ""}`)
       .then(async (r) => {
         const body = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error((body as { error?: string }).error ?? "Could not load products.");
@@ -98,7 +101,7 @@ export default function CommerceSection({
     };
     // Refetch when the tab, the unlock level or a manual retry changes (not on every small score move).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commerce.unlocked, commerce.tier, channel, reload]);
+  }, [commerce.unlocked, commerce.tier, channel, reload, redness !== null && redness > 40]);
 
   if (!scanned) {
     return (
@@ -164,6 +167,13 @@ export default function CommerceSection({
           {data ? "Live prices" : failed ? "Prices unavailable" : "Finding the best prices"}
         </span>
       </div>
+
+      {redness !== null && redness > 40 && (
+        <p role="status" className="mb-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+          Recovery mode: your redness is {Math.round(redness)}/100. Only gentle, soothing essentials are open for
+          now. Richer products stay locked until redness is under 40.
+        </p>
+      )}
 
       {/* Pharmacy vs brands */}
       <div

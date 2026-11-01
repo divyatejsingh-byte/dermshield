@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { FlaskConical, Menu, X } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
-import { useApp } from "../AppProvider";
+import { useSkin } from "@/context/SkinContext";
 import AuthButton, { GoogleMark } from "./AuthButton";
 import DemoChooser from "./DemoChooser";
 import ThemeToggle from "./ThemeToggle";
@@ -20,7 +20,7 @@ const LINKS = [
 
 /** Shared top bar and mobile drawer. Lives in the root layout, so it stays put between pages. */
 export default function Nav() {
-  const { authed, guest, changeGuest, startBlankDemo, startSampleDemo } = useApp();
+  const { authed, guest, changeGuest, startBlankDemo, loadDemoProfile } = useSkin();
   const pathname = usePathname();
   const links = authed ? [{ href: "/", label: "Dashboard" }, ...LINKS] : LINKS;
   const [open, setOpen] = useState(false);
@@ -179,7 +179,7 @@ export default function Nav() {
           }}
           onSample={() => {
             setDemoOpen(false);
-            startSampleDemo();
+            loadDemoProfile();
           }}
         />
       )}

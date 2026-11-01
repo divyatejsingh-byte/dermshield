@@ -88,6 +88,8 @@ export interface MarketProduct {
   savings?: { amount: number; versus: string };
   /** Data-URI or remote image URL */
   thumbnail: string;
+  /** Held back while the skin recovers (no prices fetched); shown as a locked card */
+  locked?: boolean;
   listings: MarketListing[];
 }
 
@@ -95,6 +97,8 @@ export interface MarketplaceResponse {
   source: "serpapi";
   channel: "pharmacy" | "commercial";
   tier: "none" | "soothing" | "full";
+  /** True when redness above 40 capped the store at soothing care */
+  recovery?: boolean;
   products: MarketProduct[];
 }
 

@@ -24,9 +24,11 @@ interface Props {
   shield: ShieldResult | null;
   metrics: SkinMetrics | null;
   onAdd: (name: string, active: string, category?: ActiveCategory) => void;
+  /** Shown while nothing is scanned: fills the page with the sample profile */
+  onLoadDemo?: () => void;
 }
 
-export default function RosterLedger({ shelf, shield, metrics, onAdd }: Props) {
+export default function RosterLedger({ shelf, shield, metrics, onAdd, onLoadDemo }: Props) {
   const verdicts = new Map((shield?.evaluation.verdicts ?? []).map((v) => [v.product.id, v]));
   const rows = shelf.filter((p) => p.enabled);
   // Before a scan the rows still list what we check and the healthy ranges, with no readings.
@@ -59,12 +61,22 @@ export default function RosterLedger({ shelf, shield, metrics, onAdd }: Props) {
                 </p>
               </div>
             </div>
-            <Link
-              href={metrics ? "#manage-products" : "/scan"}
-              className="shrink-0 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
-            >
-              {metrics ? "Add Products" : "Check My Skin"}
-            </Link>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Link
+                href={metrics ? "#manage-products" : "/scan"}
+                className="rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+              >
+                {metrics ? "Add Products" : "Check My Skin"}
+              </Link>
+              {!metrics && onLoadDemo && (
+                <button
+                  onClick={onLoadDemo}
+                  className="rounded-full border border-amber-400/50 px-5 py-2.5 text-sm font-semibold text-amber-300 transition hover:bg-amber-400/10"
+                >
+                  Load demo
+                </button>
+              )}
+            </div>
           </div>
         )}
         {(rows.length === 0 || !metrics) && (

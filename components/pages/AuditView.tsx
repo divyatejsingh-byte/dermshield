@@ -1,27 +1,39 @@
 "use client";
 
 import PageShell from "../PageShell";
+import PageSkeleton from "../PageSkeleton";
 import RosterLedger from "../landing/RosterLedger";
 import ShelfAuditor from "../ShelfAuditor";
-import { useApp } from "../AppProvider";
+import { useSkin } from "@/context/SkinContext";
 
 export default function AuditView() {
-  const a = useApp();
+  const s = useSkin();
+  if (!s.hydrated) return <PageSkeleton />;
+
+  const add = (name: string, active: string, category?: Parameters<typeof s.addProductToAudit>[0]["category"]) =>
+    s.addProductToAudit({ name, active, category });
+
   return (
     <>
       <div className="pt-14 md:pt-16">
-        <RosterLedger shelf={a.shelf} shield={a.shield} metrics={a.metrics} onAdd={a.addProduct} />
+        <RosterLedger
+          shelf={s.shelf}
+          shield={s.shield}
+          metrics={s.readings}
+          onAdd={add}
+          onLoadDemo={s.loadDemoProfile}
+        />
       </div>
       <PageShell eyebrow="MANAGE YOUR PRODUCTS" title="Your routine, checked">
         <div id="manage-products" className="max-w-3xl scroll-mt-24">
           <ShelfAuditor
-            shelf={a.shelf}
-            shield={a.shield}
-            metrics={a.metrics}
-            day={a.day}
-            onToggle={a.toggleProduct}
-            onAdd={a.addProduct}
-            onRemove={a.removeProduct}
+            shelf={s.shelf}
+            shield={s.shield}
+            metrics={s.readings}
+            day={s.day}
+            onToggle={s.toggleProduct}
+            onAdd={add}
+            onRemove={s.removeProductFromAudit}
           />
         </div>
       </PageShell>

@@ -20,7 +20,7 @@ export const DEMO_SHELF: ShelfProduct[] = [
   },
   {
     id: "demo-retinol",
-    name: "Retinol 0.5% Serum",
+    name: "0.5% Retinol in Squalane",
     active: "Retinol",
     category: "retinoid",
     enabled: true,
@@ -28,7 +28,7 @@ export const DEMO_SHELF: ShelfProduct[] = [
   },
   {
     id: "demo-cleanser",
-    name: "Ceramide Hydrating Cleanser",
+    name: "Gentle Ceramide Cleanser",
     active: "Ceramides",
     category: "gentle",
     enabled: true,
