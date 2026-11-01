@@ -7,9 +7,11 @@ import type { Stage } from "@/types/dermshield";
 import ScoreDial from "./ScoreDial";
 import { TONE } from "./tone";
 
-export default function Header({ score, stage }: { score: number; stage: Stage }) {
-  const meta = STAGE_META[stage];
-  const tone = TONE[meta.tone];
+/** `null` renders the same card in a muted "not scanned yet" state, so the page doesn't jump when a scan lands. */
+export default function Header({ score, stage }: { score: number | null; stage: Stage | null }) {
+  const empty = score === null || stage === null;
+  const meta = STAGE_META[stage ?? "acute"];
+  const tone = empty ? TONE.amber : TONE[meta.tone];
 
   return (
     <header className="border-b border-slate-800/80 bg-slate-950/80 rounded-2xl border">
@@ -37,7 +39,7 @@ export default function Header({ score, stage }: { score: number; stage: Stage }
             tone.border,
           )}
         >
-          <ScoreDial score={score} stage={stage} size={52} />
+          <ScoreDial score={score ?? 0} stage={stage ?? "acute"} size={52} className={empty ? "opacity-30 grayscale" : undefined} />
           <div className="leading-tight">
             <div className="text-[10px] uppercase tracking-wider text-slate-500">
               Skin Shield Score
@@ -48,7 +50,7 @@ export default function Header({ score, stage }: { score: number; stage: Stage }
                 tone.badge,
               )}
             >
-              {meta.label}
+              {empty ? "Not scanned yet" : meta.label}
             </span>
           </div>
         </div>

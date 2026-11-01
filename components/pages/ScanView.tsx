@@ -37,7 +37,7 @@ export default function ScanView() {
             selfie to replace them with your own.
           </p>
         )}
-        {s.shield && <Header score={s.shield.score} stage={s.shield.stage} />}
+        <Header score={s.shield?.score ?? null} stage={s.shield?.stage ?? null} />
         <div className="grid gap-8 lg:grid-cols-2">
           <BiometricsPanel
             metrics={s.readings}
